@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-app = FastAPI()
+app = FastAPI(root_path="/api-lasante")
 
 @app.get("/")
 def read_root():
