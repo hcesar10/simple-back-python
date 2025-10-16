@@ -1,4 +1,4 @@
-name: Deploy to Remote Server
+name: Deploy Back Staging via SSH
 
 on:
   workflow_dispatch:
@@ -12,17 +12,7 @@ jobs:
         with:
           ref: ${{ github.ref_name }}
 
-      - name: Copy files to remote server via SSH
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          password: ${{ secrets.SSH_PASS }}
-          port: ${{ secrets.SSH_PORT }}
-          source: .
-          target: ~/api
-
-      - name: Run Docker build and run on remote server
+      - name: Clean staging folder on remote via SSH
         uses: appleboy/ssh-action@v0.1.10
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -30,8 +20,28 @@ jobs:
           password: ${{ secrets.SSH_PASS }}
           port: ${{ secrets.SSH_PORT }}
           script: |
-            cd ~/app
-            docker build -t back-python-stg .
+            rm -rf ~/api/staging && mkdir -p ~/api/staging
+
+      - name: Copy files to remote staging via SSH
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASS }}
+          port: ${{ secrets.SSH_PORT }}
+          source: .
+          target: ~/api/staging
+
+      - name: Deploy on staging via SSH
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASS }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            cd ~/api/staging
             docker stop back-python-stg || true
             docker rm back-python-stg || true
+            docker build -t back-python-stg .
             docker run -d --name back-python-stg -p 8100:8000 back-python-stg

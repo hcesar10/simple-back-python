@@ -1,0 +1,47 @@
+name: Deploy Back Production via SSH
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Clean production folder on remote via SSH
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASS }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            rm -rf ~/api/production && mkdir -p ~/api/production
+
+      - name: Copy files to remote production via SSH
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASS }}
+          port: ${{ secrets.SSH_PORT }}
+          source: .
+          target: ~/api/production
+
+      - name: Deploy on production via SSH
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASS }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            cd ~/api/production
+            docker stop back-python-prod || true
+            docker rm back-python-prod || true
+            docker build -t back-python-prod .
+            docker run -d --name back-python-prod -p 8000:8000 back-python-prod
