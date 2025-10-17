@@ -44,4 +44,4 @@ jobs:
             docker stop back-python-prod || true
             docker rm back-python-prod || true
             docker build -t back-python-prod .
-            docker run -d --name back-python-prod -p 8000:8000 back-python-prod
+            docker run --restart=unless-stopped -d --name back-python-prod -p 8000:8000 back-python-prod
