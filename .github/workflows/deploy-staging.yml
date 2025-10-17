@@ -44,4 +44,4 @@ jobs:
             docker stop back-python-stg || true
             docker rm back-python-stg || true
             docker build -t back-python-stg .
-            docker run -d --name back-python-stg -p 8100:8000 back-python-stg
+            docker run --restart=unless-stopped -d --name back-python-stg -p 8100:8000 back-python-stg
